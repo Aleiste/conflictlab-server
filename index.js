@@ -11,7 +11,13 @@ const io = new Server(httpServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  // Config optimisée pour connexions mobiles instables
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['polling', 'websocket'],
+  allowUpgrades: true,
+  upgradeTimeout: 30000
 });
 
 // ==================== SCÉNARIO AVEC CHOIX ====================
@@ -354,8 +360,32 @@ Comprendre la situation et recadrer la communication, sans braquer Alex.`
       ]
     },
     
-    // Points d'apprentissage
+    // Points d'apprentissage basés sur le cours
     learningPoints: [
+      {
+        title: "Définition du conflit (Larousse)",
+        content: "Un conflit c'est une opposition d'intérêts entre deux ou plusieurs parties dont la solution peut être recherchée soit par des mesures de violence, soit par des négociations, soit par l'appel à une tierce personne. Dans notre scénario, la négociation directe était la meilleure approche."
+      },
+      {
+        title: "Les causes de conflits",
+        content: "Ce scénario illustrait plusieurs causes classiques : mauvaise communication / manque d'information (Alex n'a pas prévenu Morgan), différences de personnalité et de valeurs (autonomie vs contrôle), et conflits liés à l'organisation du travail (qui décide de quoi ?)."
+      },
+      {
+        title: "Type de conflit : Interpersonnel",
+        content: "Ce conflit entre Alex et Morgan est un conflit interpersonnel classique - entre deux individus ayant des intérêts ou perceptions divergentes. C'est le type le plus fréquent en entreprise et celui où vos compétences relationnelles font la différence."
+      },
+      {
+        title: "Effets négatifs évités",
+        content: "Un conflit mal géré aurait pu causer : baisse de productivité, détérioration du climat de travail, voire turnover. Heureusement, une bonne gestion transforme le conflit en opportunité d'amélioration."
+      },
+      {
+        title: "Effets positifs d'un conflit bien géré",
+        content: "Ce conflit a permis : une meilleure clarification des rôles et attentes (qui décide quoi), un renforcement potentiel de la cohésion après résolution, et même une source d'amélioration des processus (le SMS pour informer)."
+      },
+      {
+        title: "Stratégies de prévention",
+        content: "Pour éviter ce type de conflit à l'avenir : bonne communication (informer même en urgence), management participatif (impliquer dans les décisions), identifier les causes rapidement, et organiser des points réguliers (réunions)."
+      },
       {
         title: "L'iceberg du conflit",
         content: "Dans un conflit, on ne voit que 10% de la situation de l'autre. Alex ne savait pas que Morgan était sous pression du directeur. Morgan ne savait pas qu'Alex avait travaillé 3h sur le diagnostic. Toujours chercher ce qu'on ne voit pas."
@@ -363,18 +393,119 @@ Comprendre la situation et recadrer la communication, sans braquer Alex.`
       {
         title: "Les besoins derrière les positions",
         content: "Alex défendait sa décision, mais son vrai besoin était la reconnaissance et l'autonomie. Morgan voulait être consulté, mais son vrai besoin était de ne pas être mis en difficulté. Identifier les besoins permet de trouver des solutions gagnant-gagnant."
-      },
-      {
-        title: "Le recadrage constructif",
-        content: "Un bon recadrage est : spécifique (pas vague), tourné vers l'avenir (pas punitif), et actionnable (avec des actions concrètes). 'À l'avenir, envoie-moi un SMS' est mieux que 'Tu aurais dû me prévenir'."
-      },
-      {
-        title: "Transformer le conflit en opportunité",
-        content: "Un conflit bien géré peut renforcer la relation et améliorer le fonctionnement de l'équipe. Morgan et Alex ont fini par clarifier leurs attentes mutuelles - c'est un gain net pour l'avenir."
       }
-    ]
+    ],
+    
+    // Profils de personnalité basés sur les choix
+    personalityProfiles: {
+      collaborative: {
+        name: "Le Collaboratif",
+        emoji: "🤝",
+        description: "Tu cherches naturellement le dialogue et la compréhension mutuelle. Tu reconnais facilement tes torts et tu proposes des solutions constructives.",
+        strengths: ["Empathie", "Écoute active", "Recherche de consensus"],
+        advice: "Attention à ne pas trop céder pour éviter le conflit - tes besoins comptent aussi !"
+      },
+      assertive: {
+        name: "L'Assertif",
+        emoji: "💪",
+        description: "Tu sais défendre ta position tout en restant respectueux. Tu exprimes clairement tes besoins sans agresser l'autre.",
+        strengths: ["Communication claire", "Confiance en soi", "Équilibre"],
+        advice: "Continue comme ça ! L'assertivité est la compétence clé en gestion de conflit."
+      },
+      defensive: {
+        name: "Le Défensif",
+        emoji: "🛡️",
+        description: "Face au conflit, tu as tendance à te justifier et à protéger ta position. C'est humain, mais ça peut escalader la tension.",
+        strengths: ["Conviction", "Ténacité", "Protection de ses intérêts"],
+        advice: "Essaie d'abord d'écouter et comprendre l'autre avant de te défendre. Reconnaître un point valide désarme souvent l'adversaire."
+      },
+      avoiding: {
+        name: "L'Évitant",
+        emoji: "🏃",
+        description: "Tu préfères minimiser le conflit ou t'en retirer. Ça peut fonctionner à court terme mais les problèmes non résolus reviennent souvent.",
+        strengths: ["Calme", "Non-escalade", "Patience"],
+        advice: "Certains conflits méritent d'être affrontés. Exprimer tes besoins n'est pas agressif, c'est sain."
+      },
+      aggressive: {
+        name: "Le Combatif",
+        emoji: "⚔️",
+        description: "Tu n'hésites pas à confronter directement, parfois de manière trop frontale. Ta franchise est une force, mais le ton peut blesser.",
+        strengths: ["Franchise", "Détermination", "Pas peur du conflit"],
+        advice: "Essaie la méthode CNV : Observation (faits) → Sentiment → Besoin → Demande. Ça garde ta franchise tout en respectant l'autre."
+      }
+    }
   }
 ];
+
+// ==================== CALCUL DU PROFIL DE PERSONNALITÉ ====================
+
+function calculatePersonality(choices, totalScore, maxScore) {
+  const percentage = (totalScore / maxScore) * 100;
+  
+  // Analyser les patterns de réponses
+  let aggressiveCount = 0;
+  let defensiveCount = 0;
+  let collaborativeCount = 0;
+  let avoidingCount = 0;
+  
+  choices?.forEach(choice => {
+    const score = choice.score;
+    const text = choice.choice?.text?.toLowerCase() || '';
+    
+    // Analyser le score et le contenu
+    if (score === 0) {
+      // Réponses à 0 points = souvent agressives ou très défensives
+      if (text.includes('?!') || text.includes('tu ') || text.includes('c\'est toi')) {
+        aggressiveCount++;
+      } else {
+        defensiveCount++;
+      }
+    } else if (score === 1) {
+      // Réponses à 1 point = défensives ou évitantes
+      if (text.includes('ok') && text.length < 50) {
+        avoidingCount++;
+      } else {
+        defensiveCount++;
+      }
+    } else if (score === 2) {
+      // Réponses à 2 points = bonnes mais pas optimales
+      collaborativeCount += 0.5;
+      defensiveCount += 0.5;
+    } else if (score === 3) {
+      // Réponses à 3 points = collaboratives/assertives
+      collaborativeCount++;
+    }
+  });
+  
+  // Déterminer le profil dominant
+  const profiles = scenarios[0].personalityProfiles;
+  
+  if (percentage >= 75) {
+    // Excellent score = Assertif ou Collaboratif
+    return collaborativeCount > (choices?.length || 1) * 0.6 
+      ? profiles.collaborative 
+      : profiles.assertive;
+  } else if (percentage >= 50) {
+    // Score moyen
+    if (collaborativeCount >= defensiveCount) {
+      return profiles.collaborative;
+    } else {
+      return profiles.defensive;
+    }
+  } else if (percentage >= 25) {
+    // Score faible
+    if (aggressiveCount >= defensiveCount && aggressiveCount >= avoidingCount) {
+      return profiles.aggressive;
+    } else if (avoidingCount >= defensiveCount) {
+      return profiles.avoiding;
+    } else {
+      return profiles.defensive;
+    }
+  } else {
+    // Très faible score
+    return aggressiveCount > avoidingCount ? profiles.aggressive : profiles.defensive;
+  }
+}
 
 // ==================== GESTION DES SESSIONS ====================
 
@@ -477,9 +608,13 @@ io.on('connection', (socket) => {
     const session = sessions.get(playerData.sessionCode);
     if (!session) return;
     
+    // Calculer le profil de personnalité basé sur les scores
+    const personality = calculatePersonality(results.choices, results.totalScore, results.maxScore);
+    
     session.results[socket.id] = {
       playerName: playerData.name,
       playerRole: playerData.role,
+      personality,
       ...results
     };
     
@@ -503,12 +638,76 @@ io.on('connection', (socket) => {
     startPhase(session, 'learning');
   });
   
-  socket.on('disconnect', () => {
+  // Rejoindre une session après reconnexion
+  socket.on('rejoin-session', (sessionCode, playerName) => {
+    const session = sessions.get(sessionCode?.toUpperCase());
+    if (!session) {
+      socket.emit('rejoin-failed', 'Session expirée');
+      return;
+    }
+    
+    // Trouver le joueur existant par son nom
+    const existingPlayer = session.players.find(p => p.name === playerName);
+    if (existingPlayer) {
+      // Mettre à jour l'ID du socket
+      const oldId = existingPlayer.id;
+      existingPlayer.id = socket.id;
+      
+      // Mettre à jour la map des joueurs
+      players.delete(oldId);
+      players.set(socket.id, { sessionCode: session.code, ...existingPlayer });
+      
+      // Rejoindre la room
+      socket.join(session.code);
+      
+      // Renvoyer l'état actuel
+      let data = { 
+        phase: session.phase,
+        player: existingPlayer,
+        players: session.players
+      };
+      
+      if (session.phase === 'briefing') {
+        data.briefing = session.scenario.briefings[existingPlayer.role];
+        data.scenario = { title: session.scenario.title, context: session.scenario.context };
+      } else if (session.phase === 'roleplay') {
+        data.scenario = { ...session.scenario, steps: session.scenario.steps };
+      } else if (session.phase === 'results') {
+        data.allResults = session.results;
+        data.allBriefings = session.scenario.briefings;
+      } else if (session.phase === 'learning') {
+        data.learningPoints = session.scenario.learningPoints;
+      }
+      
+      socket.emit('rejoin-success', data);
+      console.log(`🔄 ${playerName} reconnecté à ${sessionCode}`);
+    } else {
+      socket.emit('rejoin-failed', 'Joueur non trouvé');
+    }
+  });
+  
+  socket.on('disconnect', (reason) => {
     const playerData = players.get(socket.id);
     if (playerData) {
       const session = sessions.get(playerData.sessionCode);
       if (session) {
-        socket.to(session.code).emit('player-disconnected', playerData.name);
+        // Ne pas supprimer immédiatement - laisser une chance de reconnecter
+        // On notifie juste les autres
+        console.log(`⚠️ ${playerData.name} déconnecté (${reason}) - attente reconnexion...`);
+        
+        // Si la déconnexion est "propre" (fermeture de page), on notifie
+        if (reason === 'client namespace disconnect' || reason === 'transport close') {
+          // Attendre 10 secondes avant de notifier la déconnexion
+          setTimeout(() => {
+            // Vérifier si le joueur s'est reconnecté entre temps
+            const stillDisconnected = !Array.from(players.values()).find(
+              p => p.name === playerData.name && p.sessionCode === playerData.sessionCode
+            );
+            if (stillDisconnected && session) {
+              socket.to(session.code).emit('player-disconnected', playerData.name);
+            }
+          }, 10000);
+        }
       }
       players.delete(socket.id);
     }
